@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Survei Soalin dan Plugin aka-ai</title>
+<style>
+  :root{
+    --bg:#0f0d1f; --card:#1a1734; --line:#2e2857;
+    --gold:#ff9d74; --gold2:#ff5f7e; --text:#f4f1ff; --muted:#a59fc8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(circle at top,#2a2255 0%,var(--bg) 60%) fixed;
+    color:var(--text);min-height:100vh;padding:24px 16px 80px;
+  }
+  .wrap{max-width:680px;margin:0 auto}
+  .progress{position:sticky;top:0;z-index:10;height:6px;background:var(--line);border-radius:6px;overflow:hidden;margin-bottom:20px}
+  .progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold2),var(--gold));transition:width .3s}
+  .hero{
+    background:linear-gradient(135deg,#221d45,#171433);border:1px solid var(--line);
+    border-top:6px solid var(--gold);border-radius:18px;padding:28px;margin-bottom:16px;
+    box-shadow:0 10px 40px rgba(0,0,0,.35)
+  }
+  .logo{
+    width:56px;height:56px;border-radius:14px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a0a10;
+    font-weight:900;font-size:28px;margin-bottom:14px;
+  }
+  .hero h1{font-size:26px;margin-bottom:8px;letter-spacing:.2px}
+  .hero h1 em{font-style:normal;color:var(--gold)}
+  .hero p{color:var(--muted);line-height:1.6;font-size:15px}
+  .hero .req{margin-top:14px;font-size:13px;color:var(--muted)}
+  .hero .req b{color:#ff8a8a}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px 22px 20px;margin-bottom:14px;transition:border-color .2s
+  }
+  .card:focus-within{border-color:var(--gold2)}
+  .q-label{font-size:16px;font-weight:600;margin-bottom:14px;line-height:1.45}
+  .q-label .star{color:#ff8a8a;margin-left:4px}
+  .opts{display:flex;flex-direction:column;gap:10px}
+  .opt{
+    display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;
+    border:1px solid var(--line);background:#14122b;cursor:pointer;transition:all .15s
+  }
+  .opt:hover{border-color:var(--gold2)}
+  .opt input{appearance:none;width:20px;height:20px;border:2px solid var(--muted);border-radius:50%;display:grid;place-items:center;flex-shrink:0}
+  .opt input[type=checkbox]{border-radius:6px}
+  .opt input:checked{border-color:var(--gold);background:var(--gold)}
+  .opt input[type=radio]:checked::after{content:"";width:8px;height:8px;border-radius:50%;background:#1a0a10}
+  .opt input[type=checkbox]:checked::after{content:"✓";color:#1a0a10;font-size:13px;font-weight:900}
+  .opt:has(input:checked){border-color:var(--gold);background:#2a1a24}
+  input[type=text],input[type=email],textarea{
+    width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);
+    background:#14122b;color:var(--text);font:inherit;outline:none;transition:border-color .15s
+  }
+  input[type=text]:focus,input[type=email]:focus,textarea:focus{border-color:var(--gold)}
+  textarea{min-height:90px;resize:vertical}
+  .scale{display:flex;gap:8px;flex-wrap:wrap}
+  .scale button{
+    flex:1;min-width:40px;padding:12px 0;border-radius:10px;border:1px solid var(--line);
+    background:#14122b;color:var(--text);font:inherit;font-weight:700;cursor:pointer;transition:all .15s
+  }
+  .scale button:hover{border-color:var(--gold2)}
+  .scale button.on{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a0a10;border-color:transparent}
+  .scale-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:8px}
+  .err{color:#ff8a8a;font-size:13px;margin-top:10px;display:none}
+  .card.invalid{border-color:#ff6b6b}
+  .card.invalid .err{display:block}
+  .submit{
+    width:100%;margin-top:10px;padding:16px;border:none;border-radius:14px;cursor:pointer;
+    background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a0a10;
+    font:inherit;font-weight:800;font-size:16px;box-shadow:0 8px 24px rgba(255,95,126,.25);
+    transition:transform .15s, opacity .15s
+  }
+  .submit:hover{transform:translateY(-1px)}
+  .submit:disabled{opacity:.6;cursor:wait}
+  .done{display:none;text-align:center;padding:50px 20px}
+  .done .big{font-size:64px;margin-bottom:12px}
+  .done h2{font-size:26px;margin-bottom:10px;color:var(--gold)}
+  .done p{color:var(--muted);line-height:1.6}
+  [hidden]{display:none!important}
+  .sectionHead{margin:30px 4px 14px}
+  .sectionHead h2{font-size:21px;color:var(--gold);margin-bottom:6px}
+  .sectionHead p{color:var(--muted);font-size:14px;line-height:1.55}
+  .footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="progress"><span id="bar"></span></div>
+
+  <div id="form-view">
+    <div class="hero">
+      <div class="logo">S</div>
+      <h1>Survei <em>Soalin</em> &amp; <em>aka-ai</em></h1>
+      <p>Ada dua bagian: Soalin Regular dan plugin aka-ai. Jawab apa adanya, totalnya sekitar 5 menit.</p>
+      <p class="req"><b>*</b> Wajib diisi</p>
+    </div>
+    <div id="questions"></div>
+    <button class="submit" id="submit">Kirim Survei</button>
+    <div class="footer">Soalin & aka-ai · Makasih udah ikut ya</div>
+  </div>
+
+  <div class="done" id="done-view">
+    <div class="big">🎉</div>
+    <h2>Makasih!</h2>
+    <p>Jawaban kamu sudah terkirim. Masukan kamu berarti banget buat pengembangan Soalin.</p>
+  </div>
+</div>
+
+<script>
+/* ============ KONFIGURASI ============
+   1. Ganti SCRIPT_URL dengan URL Web App dari Google Apps Script.
+   2. Jangan ubah "id" setelah data masuk ke Sheet, karena id dipakai sebagai nama kolom.
+   type: "text" | "email" | "textarea" | "radio" | "checkbox" | "scale"
+*/
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4QSWvJd_5LnHHTMqWtMrTy6Njnb2nspNMbaBFGN_G1zqyRo56Di62GtM-G-6ANwvK/exec";
+
+const QUESTIONS = [
+  {
+    "id": "sec1",
+    "type": "section",
+    "label": "Bagian 1 · Soalin Regular",
+    "desc": "Pertanyaan tentang app Soalin yang kamu pakai."
+  },
+  {
+    "id": "nama",
+    "type": "text",
+    "label": "Nama (boleh dikosongin)",
+    "placeholder": "Nama kamu"
+  },
+  {
+    "id": "mode",
+    "type": "checkbox",
+    "label": "Mode apa yang biasanya kamu pakai? (boleh lebih dari satu)",
+    "required": true,
+    "options": [
+      "Mode Latihan",
+      "Mode Tentamen (ada timer)",
+      "Multiplayer (main bareng lewat room)"
+    ]
+  },
+  {
+    "id": "fitur",
+    "type": "checkbox",
+    "label": "Fitur apa yang sering kamu pakai?",
+    "required": true,
+    "options": [
+      "Penjelasan per opsi",
+      "Gambar penjelasan",
+      "Soal isian",
+      "Acak soal",
+      "Reset soal",
+      "Distribusi jawaban (tentamen)",
+      "Papan skor (multiplayer)",
+      "Kartu soal rusak",
+      "Upload file docx/pdf sendiri",
+      "Paket dari bank online",
+      "Suara benar/salah"
+    ]
+  },
+  {
+    "id": "tingkat",
+    "type": "radio",
+    "label": "Tingkat kesulitan yang paling sering kamu pakai?",
+    "required": true,
+    "options": [
+      "Cheetah (30 detik per soal)",
+      "Orang Normal (60 detik per soal)",
+      "Folivora (5 menit per soal)",
+      "Bekicot (tanpa timer)",
+      "minites dr Erda (15 detik per soal)"
+    ]
+  },
+  {
+    "id": "tema",
+    "type": "radio",
+    "label": "Mode UI yang paling sering kamu pakai?",
+    "required": true,
+    "options": [
+      "Terang",
+      "Gelap",
+      "Persona 5",
+      "Dokumen Asli (Doksli)",
+      "Koceng",
+      "Capy Masbro",
+      "Spy x Family"
+    ]
+  },
+  {
+    "id": "puas_soalin",
+    "type": "scale",
+    "label": "Seberapa puas kamu sama Soalin?",
+    "required": true,
+    "min": 1,
+    "max": 5,
+    "minLabel": "Kurang puas",
+    "maxLabel": "Puas banget"
+  },
+  {
+    "id": "mudah_soalin",
+    "type": "scale",
+    "label": "Seberapa gampang dipakainya?",
+    "required": true,
+    "min": 1,
+    "max": 5,
+    "minLabel": "Susah",
+    "maxLabel": "Gampang banget"
+  },
+  {
+    "id": "rekomendasi_soalin",
+    "type": "scale",
+    "label": "Seberapa mungkin kamu rekomendasiin Soalin ke temen?",
+    "required": true,
+    "min": 0,
+    "max": 10,
+    "minLabel": "Nggak mungkin",
+    "maxLabel": "Pasti"
+  },
+  {
+    "id": "saran_soalin",
+    "type": "textarea",
+    "label": "Fitur Soalin apa yang pengen kamu tambahin?",
+    "placeholder": "Tulis ide kamu..."
+  },
+  {
+    "id": "bug_soalin",
+    "type": "textarea",
+    "label": "Pernah kena bug atau kendala di Soalin? Ceritain aja",
+    "placeholder": "Ceritain aja..."
+  },
+  {
+    "id": "sec2",
+    "type": "section",
+    "label": "Bagian 2 · Plugin aka-ai",
+    "desc": "Plugin Claude buat mahasiswa kedokteran. Di sini kami mau tahu seberapa paham kamu sama pakai plugin dan skill Claude."
+  },
+  {
+    "id": "paham",
+    "type": "radio",
+    "label": "Seberapa paham kamu sama pakai plugin dan skill Claude?",
+    "required": true,
+    "options": [
+      "Sangat paham (pakai plugin dan skill, atau bikin plugin/skill sendiri buat kebutuhan sehari-hari)",
+      "Paham (pakai skill rekomendasi Claude, kadang cari skill atau plugin buatan developer lain di internet)",
+      "Cukup paham (pakai skill dan plugin yang direkomendasikan Claude)",
+      "Tidak paham (nulis prompt sepanjang Tembok Besar China buat dapet hasil yang diinginkan)",
+      "Sangat tidak paham (nyerahin harapan, doa, dan mimpi ke Tuhan Yang Maha Esa dan Claude biar hasilnya sesuai)"
+    ]
+  },
+  {
+    "id": "known",
+    "type": "checkbox",
+    "label": "Skill aka-ai mana yang sudah kamu tahu? (boleh pilih lebih dari satu)",
+    "options": [
+      "aka-help-me (penjelasan skill aka-ai)",
+      "soalin (bikin dan rapiin bank soal docx)",
+      "softfiler (PDF atau foto materi jadi markdown)",
+      "tabel-cr (tabel kasus OSCE/CBT)",
+      "transkrip (rapiin transkrip kuliah)",
+      "tutor (bantu sesi PBL/DKK)"
+    ]
+  },
+  {
+    "id": "fb_aka_help_me",
+    "type": "textarea",
+    "label": "Skill aka-help-me: menurut kamu berguna nggak? Kenapa?",
+    "placeholder": "Tulis pendapat kamu...",
+    "showIf": {
+      "id": "known",
+      "value": "aka-help-me (penjelasan skill aka-ai)"
+    }
+  },
+  {
+    "id": "fb_soalin",
+    "type": "textarea",
+    "label": "Skill soalin: menurut kamu berguna nggak? Kenapa?",
+    "placeholder": "Tulis pendapat kamu...",
+    "showIf": {
+      "id": "known",
+      "value": "soalin (bikin dan rapiin bank soal docx)"
+    }
+  },
+  {
+    "id": "fb_softfiler",
+    "type": "textarea",
+    "label": "Skill softfiler: menurut kamu berguna nggak? Kenapa?",
+    "placeholder": "Tulis pendapat kamu...",
+    "showIf": {
+      "id": "known",
+      "value": "softfiler (PDF atau foto materi jadi markdown)"
+    }
+  },
+  {
+    "id": "fb_tabel_cr",
+    "type": "textarea",
+    "label": "Skill tabel-cr: menurut kamu berguna nggak? Kenapa?",
+    "placeholder": "Tulis pendapat kamu...",
+    "showIf": {
+      "id": "known",
+      "value": "tabel-cr (tabel kasus OSCE/CBT)"
+    }
+  },
+  {
+    "id": "fb_transkrip",
+    "type": "textarea",
+    "label": "Skill transkrip: menurut kamu berguna nggak? Kenapa?",
+    "placeholder": "Tulis pendapat kamu...",
+    "showIf": {
+      "id": "known",
+      "value": "transkrip (rapiin transkrip kuliah)"
+    }
+  },
+  {
+    "id": "fb_tutor",
+    "type": "textarea",
+    "label": "Skill tutor: menurut kamu berguna nggak? Kenapa?",
+    "placeholder": "Tulis pendapat kamu...",
+    "showIf": {
+      "id": "known",
+      "value": "tutor (bantu sesi PBL/DKK)"
+    }
+  },
+  {
+    "id": "saran_plugin",
+    "type": "textarea",
+    "label": "Fitur apa yang pengen kamu tambahin di plugin aka-ai?",
+    "placeholder": "Tulis ide kamu..."
+  },
+  {
+    "id": "bug_plugin",
+    "type": "textarea",
+    "label": "Pernah kena error atau hasil yang aneh? Ceritain di sini",
+    "placeholder": "Misal: soalnya kepotong, gambarnya hilang..."
+  },
+  {
+    "id": "email",
+    "type": "email",
+    "label": "Email (kalau mau kami hubungi, boleh dikosongin)",
+    "placeholder": "nama@email.com"
+  }
+];
+const INPUTS = QUESTIONS.filter(q => q.type !== "section");
+
+
+/* ============ RENDER ============ */
+const answers = {};
+const container = document.getElementById("questions");
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+const CARDS = {};
+QUESTIONS.forEach((q) => {
+  if (q.type === "section") {
+    const head = document.createElement("div");
+    head.className = "sectionHead";
+    head.innerHTML = `<h2>${esc(q.label)}</h2>${q.desc ? `<p>${esc(q.desc)}</p>` : ""}`;
+    container.appendChild(head);
+    return;
+  }
+  const card = document.createElement("div");
+  CARDS[q.id] = card;
+  card.className = "card";
+  card.dataset.id = q.id;
+  let body = "";
+
+  if (q.type === "text" || q.type === "email") {
+    body = `<input type="${q.type}" id="f-${q.id}" placeholder="${esc(q.placeholder||"")}">`;
+  } else if (q.type === "textarea") {
+    body = `<textarea id="f-${q.id}" placeholder="${esc(q.placeholder||"")}"></textarea>`;
+  } else if (q.type === "radio" || q.type === "checkbox") {
+    body = `<div class="opts">` + q.options.map((o, j) =>
+      `<label class="opt"><input type="${q.type}" name="${q.id}" value="${esc(o)}" id="f-${q.id}-${j}"><span>${esc(o)}</span></label>`
+    ).join("") + `</div>`;
+  } else if (q.type === "scale") {
+    const vals = []; for (let v = q.min; v <= q.max; v++) vals.push(v);
+    body = `<div class="scale">` + vals.map(v =>
+      `<button type="button" data-v="${v}">${v}</button>`).join("") + `</div>
+      <div class="scale-labels"><span>${esc(q.minLabel)}</span><span>${esc(q.maxLabel)}</span></div>`;
+  }
+
+  card.innerHTML = `
+    <div class="q-label">${esc(q.label)}${q.required ? '<span class="star">*</span>' : ""}</div>
+    ${body}
+    <div class="err">Pertanyaan ini wajib diisi.</div>`;
+  container.appendChild(card);
+
+  if (q.type === "text" || q.type === "email" || q.type === "textarea") {
+    card.querySelector("input,textarea").addEventListener("input", e => setAnswer(q.id, e.target.value.trim()));
+  } else if (q.type === "radio") {
+    card.querySelectorAll("input").forEach(inp => inp.addEventListener("change", e => setAnswer(q.id, e.target.value)));
+  } else if (q.type === "checkbox") {
+    card.querySelectorAll("input").forEach(inp => inp.addEventListener("change", () => {
+      const checked = [...card.querySelectorAll("input:checked")].map(x => x.value);
+      setAnswer(q.id, checked.join(", "));
+    }));
+  } else if (q.type === "scale") {
+    card.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+      card.querySelectorAll("button").forEach(x => x.classList.remove("on"));
+      b.classList.add("on");
+      setAnswer(q.id, b.dataset.v);
+    }));
+  }
+});
+
+updateVisibility();
+
+function setAnswer(id, value){
+  answers[id] = value;
+  card(id)?.classList.remove("invalid");
+  updateVisibility();
+  updateProgress();
+}
+function updateVisibility(){
+  INPUTS.forEach(q => {
+    if (!q.showIf) return;
+    const picked = (answers[q.showIf.id] || "").split(", ");
+    CARDS[q.id].hidden = !picked.includes(q.showIf.value);
+  });
+}
+function card(id){ return container.querySelector(`.card[data-id="${id}"]`); }
+
+function updateProgress(){
+  const total = INPUTS.length;
+  const filled = INPUTS.filter(q => answers[q.id] !== undefined && answers[q.id] !== "").length;
+  document.getElementById("bar").style.width = (filled / total * 100) + "%";
+}
+
+/* ============ KIRIM ============ */
+document.getElementById("submit").addEventListener("click", async () => {
+  let ok = true, first = null;
+  INPUTS.forEach(q => {
+    if (!CARDS[q.id].hidden && q.required && !answers[q.id]) {
+      card(q.id).classList.add("invalid");
+      if (!first) first = card(q.id);
+      ok = false;
+    }
+  });
+  if (!ok) { first.scrollIntoView({behavior:"smooth", block:"center"}); return; }
+
+  if (SCRIPT_URL.startsWith("GANTI")) {
+    alert("SCRIPT_URL belum diisi. Lihat panduan setup.");
+    return;
+  }
+
+  const btn = document.getElementById("submit");
+  btn.disabled = true; btn.textContent = "Mengirim...";
+
+  const payload = {timestamp: new Date().toISOString(), survei: "survei-soalin-aka"};
+  INPUTS.forEach(q => payload[q.id] = answers[q.id] ?? "");
+
+  try {
+    // no-cors: Apps Script tidak mengirim header CORS, data tetap masuk ke Sheet
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {"Content-Type": "text/plain;charset=utf-8"},
+      body: JSON.stringify(payload)
+    });
+    document.getElementById("form-view").style.display = "none";
+    document.getElementById("done-view").style.display = "block";
+    window.scrollTo({top:0, behavior:"smooth"});
+  } catch (err) {
+    alert("Gagal mengirim. Cek koneksi kamu lalu coba lagi.");
+    btn.disabled = false; btn.textContent = "Kirim Survei";
+  }
+});
+</script>
+</body>
+</html>
